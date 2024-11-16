@@ -12,7 +12,7 @@ namespace Photovoltaique.API.Controllers
         // Rayon de la Terre en kilomètres
         private const double MaxPower = 1238;
         private const double EarthRadiusKm = 6371;
-        private readonly string[] Months = { "Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre" };
+        private readonly List<string> Months = new List<string> { "Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre" };
 
         [HttpPost]
         public ConsumationDown RetrieveSites(Coordinate coordinate)
@@ -20,43 +20,53 @@ namespace Photovoltaique.API.Controllers
             var selected = Data.Sites.Where(site => !site.Production 
                 && IsPointInCircle(coordinate.Latitude, coordinate.Longitude, site.Latitude, site.Longitude, 1.0)).ToList();
 
-            var sum = selected
-                .SelectMany(site => site.Consomations)
-                .GroupBy(conso => conso.Time)
-                .Select(group => new Consomation()
-                {
-                    Time = group.Key,
-                    Value = group.Sum(conso => conso.Value),
-                });
+            if (selected.Count > 0)
+            {
+                var sum = selected
+                                .SelectMany(site => site.Consomations)
+                                .GroupBy(conso => conso.Time)
+                                .Select(group => new Consomation()
+                                {
+                                    Time = group.Key,
+                                    Value = group.Sum(conso => conso.Value),
+                                });
 
-            var production = Data.Production
-                .Select(production => new Consomation() { Value = production.Value * MaxPower, Time = production.Time });
+                var production = Data.Production
+                    .Select(production => new Consomation() { Value = production.Value * MaxPower, Time = production.Time });
 
-            var calcul = sum.Join(production, s => s.Time, 
-                prod => prod.Time, 
-                (s, prod) => new 
+                var calcul = sum.Join(production, s => s.Time,
+                    prod => prod.Time,
+                    (s, prod) => new
+                    {
+                        Time = s.Time,
+                        Consomation = s.Value,
+                        TotalProduction = prod.Value,
+                        ValuableProduction = s.Value <= prod.Value ? s.Value : prod.Value,
+                        Surplus = prod.Value - s.Value
+                    });
+
+                var calcul2 = calcul
+                        .GroupBy(c => c.Time.Month)
+                        .OrderBy(group => group.Key);
+
+                return new ConsumationDown()
                 {
-                    Time = s.Time, 
-                    Consomation = s.Value, 
-                    TotalProduction = prod.Value,
-                    ValuableProduction = s.Value <= prod.Value ? s.Value : prod.Value,
-                    Surplus = prod.Value - s.Value });
+                    AutoConsumationRate = calcul.Sum(group => group.ValuableProduction) / calcul.Sum(group => group.TotalProduction),
+                    AutoProductionRate = calcul.Sum(group => group.ValuableProduction) / calcul.Sum(group => group.Consomation),
+                    Months = Months,
+                    ValuableProduction = calcul2.Select(group => group.Sum(g => g.ValuableProduction)).ToList(),
+                    Surplus = calcul2.Select(group => group.Sum(g => g.Surplus)).ToList(),
+                };
+            }
 
             return new ConsumationDown()
             {
-                AutoConsumationRate = calcul.Sum(group => group.ValuableProduction) / calcul.Sum(group => group.TotalProduction),
-                AutoProductionRate = calcul.Sum(group => group.ValuableProduction) / calcul.Sum(group => group.Consomation),
-                Consumation = calcul
-                    .GroupBy(c => c.Time.Month)
-                    .OrderBy(group => group.Key)
-                    .Select(group => new MonthlyConsumation()
-                    {
-                        Month = Months[group.Key - 1],
-                        ValuableProduction = group.Sum(g => g.ValuableProduction),
-                        Surplus = group.Sum(g => g.Surplus),
-                    })
-                    .ToList(),
-            };          
+                AutoConsumationRate = 0,
+                AutoProductionRate = 0,
+                Months = Months,
+                ValuableProduction = new List<double> {0,0,0,0,0,0, 0, 0, 0, 0, 0, 0 },
+                Surplus = new List<double> { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            };
         }        
 
         /// <summary>

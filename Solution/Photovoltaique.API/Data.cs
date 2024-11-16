@@ -10,17 +10,15 @@ namespace Photovoltaique.API
 
         public static void Seed()
         {
-            /*Sites = new List<Site>()
+            Sites = new List<Site>()
             {
                 new Site()
                 {
                     Name = "APPT N1 GS CHAMPS PERDRIX",
                     Production = false,
                     Type = "Groupe Scolaire",
-                    /*Longitude = 5.00188970565796,
+                    Longitude = 5.00188970565796,
                     Latitude = 47.3207778930664,
-                    Longitude = 0,
-                    Latitude = 0,
                     Consomations = GenerateConsomation(),
                 },
                 new Site()
@@ -28,10 +26,8 @@ namespace Photovoltaique.API
                     Name = "APPT N1 GS LAMARTINE",
                     Production = false,
                     Type = "Groupe Scolaire",
-                    /*Longitude = 5.05582141876221,
+                    Longitude = 5.05582141876221,
                     Latitude = 47.3408164978027,
-                    Longitude = 0,
-                    Latitude = 0,
                     Consomations = GenerateConsomation(),
                 },
                 new Site()
@@ -39,10 +35,8 @@ namespace Photovoltaique.API
                     Name = "APPT N1 GS MANSART CGT",
                     Production = false,
                     Type = "Groupe Scolaire",
-                   /* Longitude = 5.0612645149231,
+                    Longitude = 5.0612645149231,
                     Latitude = 47.3092956542969,
-                    Longitude = 0,
-                    Latitude = 0,
                     Consomations = GenerateConsomation(),
                 },
                 new Site()
@@ -50,23 +44,10 @@ namespace Photovoltaique.API
                     Name = "AUXILIAIRES CENTRALE PV DEPÔT DU TRAMWAY",
                     Production = true,
                     Type = "Equipement Public",
-                    /*Longitude = 5.02460050582886,
+                    Longitude = 5.02460050582886,
                     Latitude = 47.2956848144531,
                 },
-            };*/
-
-            Sites = new List<Site>();
-
-            for (int i = 0; i < 100; i++)
-            {
-                Sites.Add(new Site()
-                {
-                    Production = false,
-                    Longitude = 0,
-                    Latitude = 0,
-                    Consomations = GenerateConsomation(),
-                });
-            }
+            };
 
 
             Production = GenerateConsomation(800);
@@ -83,7 +64,7 @@ namespace Photovoltaique.API
             {
                 conso.Add(new Consomation()
                 {
-                    Time = (new DateTime(2023, 1, 1)).AddMinutes(i * 15),
+                    Time = (new DateTime(2023, 1, 1)).AddMinutes(i * 30),
                     Value = random.NextDouble() * maxConso,
                 });
             }
