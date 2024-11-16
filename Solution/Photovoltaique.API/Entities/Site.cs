@@ -15,6 +15,6 @@ namespace Photovoltaique.API.Entities
         [Name("Latitude")]
         public double Latitude { get; set; }
 
-        public List<Consomation> Consomations { get; set; }
+        public List<Consomation> Consomations { get; set; } = new List<Consomation>();
     }
 }
