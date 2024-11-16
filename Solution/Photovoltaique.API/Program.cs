@@ -9,6 +9,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddControllers();
 
+builder.Services.AddCors();
+
 Data.Seed();
 
 var app = builder.Build();
@@ -22,5 +24,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapControllers();
 //app.UseHttpsRedirection();
+
+app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
 
 app.Run();
