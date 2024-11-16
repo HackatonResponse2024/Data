@@ -64,7 +64,7 @@ namespace Photovoltaique.API
             {
                 conso.Add(new Consomation()
                 {
-                    Time = (new DateTime(2023, 1, 1)).AddMinutes(i * 15),
+                    Time = (new DateTime(2023, 1, 1)).AddMinutes(i * 30),
                     Value = random.NextDouble() * maxConso,
                 });
             }
