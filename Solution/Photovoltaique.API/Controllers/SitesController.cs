@@ -7,8 +7,6 @@ using Photovoltaique.API.Controllers.Dto.Down;
 using Photovoltaique.API.Controllers.Dto.Up;
 using Photovoltaique.API.Entities;
 using System.Globalization;
-using System.Text;
-using CsvHelper.Configuration.Attributes;
 using System.IO;
 using System.Threading.Tasks;
 using System;
@@ -33,6 +31,7 @@ namespace Photovoltaique.API.Controllers
                 var config = new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
                     Delimiter = ";",
+                    
                 };
 
                 using (var stream = new StreamReader(file.OpenReadStream()))
@@ -42,8 +41,8 @@ namespace Photovoltaique.API.Controllers
                         var sites = csv.GetRecords<SiteWrapper>();
                         Data.Sites = sites.Select(site => new Site()
                         {
-                            Latitude = site.Latitude,
-                            Longitude = site.Longitude,
+                            Latitude = double.Parse(site.Latitude),
+                            Longitude = double.Parse(site.Longitude),
                             Name = site.Name,
                             Production = false,
                             Type = site.Type,
@@ -71,8 +70,8 @@ namespace Photovoltaique.API.Controllers
                         var sites = csv.GetRecords<SiteWrapper>();
                         Data.Sites = sites.Select(site => new Site()
                         {
-                            Latitude = site.Latitude,
-                            Longitude = site.Longitude,
+                            Latitude = double.Parse(site.Latitude),
+                            Longitude = double.Parse(site.Longitude),
                             Name = site.Name,
                             Production = true,
                             Type = site.Type,
@@ -137,9 +136,9 @@ namespace Photovoltaique.API.Controllers
         [Name("Type d'utilisation")]
         public string Type { get; set; }
         [Name("Longitude")]
-        public double Longitude { get; set; }
+        public string Longitude { get; set; }
         [Name("Latitude")]
-        public double Latitude { get; set; }
+        public string Latitude { get; set; }
     }
 
     public class ElectricityRecord
