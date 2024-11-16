@@ -8,5 +8,7 @@
         public bool Production { get; set; }
         public double Longitude { get; set; }
         public double Latitude { get; set; }
+
+        public List<Consomation> Consomations { get; set; }
     }
 }
