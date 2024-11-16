@@ -114,16 +114,19 @@ namespace Photovoltaique.API.Controllers
             // Grouper les données par tranches horaires
             var groupedByHour = filteredRecords
                 .GroupBy(record => new DateTime(record.Date.Year, record.Date.Month, record.Date.Day, record.Date.Hour, 0, 0)) // Grouper par heure
-                .Select(group => new
+                .Select(group => new Consomation
                 {
-                    Timestamp = group.Key,  // Clé du groupe : le début de l'heure
-                    AverageValue = group.Average(r => r.Valeur) // Moyenne des valeurs
+                    Time = group.Key,  // Clé du groupe : le début de l'heure
+                    Value = group.Average(r => r.Valeur) // Moyenne des valeurs
                 })
-                .OrderBy(result => result.Timestamp) // Trier par ordre chronologique
+                .OrderBy(result => result.Time) // Trier par ordre chronologique
                 .ToList();
 
-            // Retourner les résultats
-            return Ok(groupedByHour);
+            Site current = Data.Sites.Single(s => s.Name == records[0].Name);
+
+            current.Consomations = groupedByHour;
+
+            return Ok(groupedByHour.Count);
         }
     }
 
@@ -141,6 +144,8 @@ namespace Photovoltaique.API.Controllers
 
     public class ElectricityRecord
     {
+        [Name("nom")]
+        public string Name { get; set; }
         [Name("date")]
         public DateTime Date { get; set; }
         [Name("valeur")]
