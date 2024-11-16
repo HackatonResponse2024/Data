@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Photovoltaique.API.Controllers.Dto.Down;
 using Photovoltaique.API.Entities;
 
 namespace Photovoltaique.API.Controllers
@@ -9,9 +10,9 @@ namespace Photovoltaique.API.Controllers
     public class SitesController : ControllerBase
     {
         [HttpGet]
-        public List<Site> GetSites()
+        public List<SiteDown> GetSites()
         {
-            return Data.Sites;
+            return Data.Sites.Select(site => new SiteDown(site)).ToList();
         }
     }
 }
