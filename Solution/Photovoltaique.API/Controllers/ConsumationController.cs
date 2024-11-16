@@ -32,17 +32,21 @@ namespace Photovoltaique.API.Controllers
                                 });
 
                 var production = Data.Production
-                    .Select(production => new Consomation() { Value = production.Value * MaxPower, Time = production.Time });
+                    .Select(production => new Consomation() { Value = (production.Value / MaxPower) * coordinate.Power, Time = production.Time });
 
-                var calcul = sum.Join(production, s => s.Time,
+                var calcul = production.GroupJoin(
+                    sum, 
                     prod => prod.Time,
-                    (s, prod) => new
+                    s => s.Time,
+                    (prod, sGroup) => new {prod, sGroup })
+                    .SelectMany(x => x.sGroup.DefaultIfEmpty(),
+                    (x, s) => new
                     {
-                        Time = s.Time,
-                        Consomation = s.Value,
-                        TotalProduction = prod.Value,
-                        ValuableProduction = s.Value <= prod.Value ? s.Value : prod.Value,
-                        Surplus = prod.Value - s.Value
+                        Time = x.prod.Time,
+                        Consomation = s?.Value ?? 0,
+                        TotalProduction = x.prod.Value,
+                        ValuableProduction = s != null ? Math.Min(s.Value, x.prod.Value) : 0,
+                        Surplus = x.prod.Value - (s?.Value ?? 0),
                     });
 
                 var calcul2 = calcul
@@ -52,7 +56,7 @@ namespace Photovoltaique.API.Controllers
                 return new ConsumationDown()
                 {
                     AutoConsumationRate = calcul.Sum(group => group.ValuableProduction) / calcul.Sum(group => group.TotalProduction),
-                    AutoProductionRate = calcul.Sum(group => group.ValuableProduction) / calcul.Sum(group => group.Consomation),
+                    AutoProductionRate = calcul.All(g => g.Consomation == 0) ? 0 : calcul.Sum(group => group.ValuableProduction) / calcul.Sum(group => group.Consomation),
                     Months = Months,
                     ValuableProduction = calcul2.Select(group => group.Sum(g => g.ValuableProduction)).ToList(),
                     Surplus = calcul2.Select(group => group.Sum(g => g.Surplus)).ToList(),

@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
 using System;
+using System.Text;
 
 namespace Photovoltaique.API.Controllers
 {
@@ -34,7 +35,7 @@ namespace Photovoltaique.API.Controllers
                     
                 };
 
-                using (var stream = new StreamReader(file.OpenReadStream()))
+                using (var stream = new StreamReader(file.OpenReadStream(), Encoding.Latin1))
                 {
                     using (var csv = new CsvReader(stream, config))
                     {
@@ -47,35 +48,15 @@ namespace Photovoltaique.API.Controllers
                             Production = false,
                             Type = site.Type,
                         }).ToList();
-                    }
-                }
 
-                return Ok();
-            }
-
-            return BadRequest();
-        }
-
-        [HttpPost("Productors")]
-        public async Task<IActionResult> SetGeographicalProductors(IFormFile file)
-        {
-            if (file != null)
-            {
-                var config = new CsvConfiguration(CultureInfo.InvariantCulture);
-
-                using (var stream = new StreamReader(file.OpenReadStream()))
-                {
-                    using (var csv = new CsvReader(stream, config))
-                    {
-                        var sites = csv.GetRecords<SiteWrapper>();
-                        Data.Sites = sites.Select(site => new Site()
+                        Data.Sites.Add(new Site()
                         {
-                            Latitude = double.Parse(site.Latitude),
-                            Longitude = double.Parse(site.Longitude),
-                            Name = site.Name,
+                            Latitude = 47.2956848144531,
+                            Longitude = 5.02460050582886,
+                            Name = "AUXILIAIRES CENTRALE PV DEPÔT DU TRAMWAY",
                             Production = true,
-                            Type = site.Type,
-                        }).ToList();
+                            Type = "Equipement Public",
+                        });
                     }
                 }
 
@@ -97,7 +78,7 @@ namespace Photovoltaique.API.Controllers
             memoryStream.Position = 0; // Réinitialiser la position pour la lecture
 
             // Lire les données CSV
-            using var reader = new StreamReader(memoryStream);
+            using var reader = new StreamReader(memoryStream, Encoding.Latin1);
             using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
                 HasHeaderRecord = true, // Assurez-vous qu'il y a une ligne d'en-tête
@@ -127,6 +108,48 @@ namespace Photovoltaique.API.Controllers
 
             return Ok(groupedByHour.Count);
         }
+
+        [HttpPost("Production")]
+        public async Task<IActionResult> SetProduction(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Aucun fichier n'a été fourni.");
+
+            // Temporairement stocker le fichier dans un flux mémoire
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            memoryStream.Position = 0; // Réinitialiser la position pour la lecture
+
+            // Lire les données CSV
+            using var reader = new StreamReader(memoryStream, Encoding.Latin1);
+            using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = true, // Assurez-vous qu'il y a une ligne d'en-tête
+                Delimiter = ";"
+            });
+
+            // Charger toutes les lignes
+            var records = csv.GetRecords<Production>().ToList();
+
+            // Filtrer les lignes où la colonne "date" commence par "2023"
+            var filteredRecords = records.Where(r => r.Year == 2023).ToList();
+
+            // Grouper les données par tranches horaires
+            var groupedByHour = filteredRecords
+                .GroupBy(record => new DateTime(record.Year, record.Month, record.Day, record.Hour, 0, 0)) // Grouper par heure
+                .Select(group => new Consomation
+                {
+                    Time = group.Key,  // Clé du groupe : le début de l'heure
+                    Value = group.Average(r => r.Valeur) // Moyenne des valeurs
+                })
+                .OrderBy(result => result.Time) // Trier par ordre chronologique
+                .ToList();
+
+
+            Data.Production = groupedByHour;
+
+            return Ok(groupedByHour.Count);
+        }
     }
 
     public class SiteWrapper
@@ -148,6 +171,20 @@ namespace Photovoltaique.API.Controllers
         [Name("date")]
         public DateTime Date { get; set; }
         [Name("valeur")]
+        public double Valeur { get; set; }
+    }
+
+    public class Production
+    {
+        [Name("Année")]
+        public int Year { get; set; }
+        [Name("Mois")]
+        public int Month { get; set; }
+        [Name("Jour")]
+        public int Day { get; set; }
+        [Name("Heure")]
+        public int Hour { get; set; }
+        [Name("Valeur")]
         public double Valeur { get; set; }
     }
 }
